@@ -1,9 +1,8 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-enum Direction { forward, reverse }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,27 +20,37 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Zen Breath',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+  MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  Direction direction = Direction.forward;
+  String text = 'Inspire';
+  bool hold = false;
+
   int randomRotation = Random().nextInt(50) - 25;
+
+  late final AnimationController _pulseController = AnimationController(
+    duration: const Duration(seconds: 2),
+    animationBehavior: AnimationBehavior.preserve,
+    vsync: this,
+  )
+    ..repeat(reverse: true)
+    ..addListener(() {
+      setState(() {});
+    });
 
   late final AnimationController _controller = AnimationController(
     duration: const Duration(seconds: 4),
@@ -51,15 +60,22 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   )
     ..forward()
     ..addListener(() async {
-      if (_controller.isCompleted && direction == Direction.forward) {
+      if (_controller.isCompleted) {
         setState(() {
-          direction = Direction.reverse;
+          hold = true;
         });
         await Future.delayed(Duration(seconds: 7));
+        setState(() {
+          text = 'Expire';
+          hold = false;
+        });
+
         _controller.reverse();
-      } else if (_controller.isDismissed && direction == Direction.reverse) {
+      } else if (_controller.isDismissed) {
+        setState(() {
+          text = 'Inspire';
+        });
         _controller.forward();
-        direction = Direction.forward;
         randomRotation = Random().nextInt(50) - 25;
       }
       setState(() {});
@@ -67,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   late final scaleAnimation = Tween(
     begin: 0.0,
-    end: 500.0,
+    end: 250.0,
   ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic));
 
   @override
@@ -85,13 +101,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             turns: new AlwaysStoppedAnimation(randomRotation / 360),
             child: UnconstrainedBox(
               child: AnimatedCrossFade(
-                duration: Duration(seconds: 7),
-                reverseDuration: Duration(seconds: 0),
-                firstChild:
-                    TextWidget(text: 'Inspire', scale: scaleAnimation.value),
-                secondChild:
-                    TextWidget(text: 'Expire', scale: scaleAnimation.value),
-                crossFadeState: direction == Direction.forward
+                duration: Duration(seconds: 2),
+                firstChild: TextWidget(text: text, scale: scaleAnimation.value),
+                secondChild: TextWidget(
+                    text: 'Hold',
+                    scale: scaleAnimation.value + 10 * _pulseController.value),
+                crossFadeState: !hold
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
               ),
@@ -116,11 +131,16 @@ class TextWidget extends StatelessWidget {
     return UnconstrainedBox(
       clipBehavior: Clip.none,
       child: Center(
-        child: Text(
-          text,
-          overflow: TextOverflow.visible,
-          style: TextStyle(
-              fontFamily: 'Alphasmoke', color: Colors.white, fontSize: scale),
+        child: SizedBox(
+          height: scale,
+          child: FittedBox(
+            fit: BoxFit.fitWidth,
+            child: Text(
+              text,
+              overflow: TextOverflow.visible,
+              style: TextStyle(fontFamily: 'Alphasmoke', color: Colors.white),
+            ),
+          ),
         ),
       ),
     );
