@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
 
   late final scaleAnimation = Tween(
-    begin: 0.0,
+    begin: -10.0,
     end: 250.0,
   ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic));
 
@@ -96,21 +97,66 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xff9cc4cd),
-      body: Center(
-        child: RotationTransition(
-            turns: new AlwaysStoppedAnimation(randomRotation / 360),
-            child: UnconstrainedBox(
-              child: AnimatedCrossFade(
-                duration: Duration(seconds: 2),
-                firstChild: TextWidget(text: text, scale: scaleAnimation.value),
-                secondChild: TextWidget(
-                    text: 'Hold',
-                    scale: scaleAnimation.value + 10 * _pulseController.value),
-                crossFadeState: !hold
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                tileMode: TileMode.mirror,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xff95c1da),
+                  Color(0xff37a6ff),
+                ],
+                stops: [
+                  0,
+                  1,
+                ],
               ),
-            )),
+              backgroundBlendMode: BlendMode.srcOver,
+            ),
+            child: PlasmaRenderer(
+              type: PlasmaType.infinity,
+              particles: 13,
+              color: Color(0x174396e9),
+              blur: 0.43,
+              size: 0.5,
+              speed: 0.2,
+              offset: 0,
+              blendMode: BlendMode.plus,
+              particleType: ParticleType.circle,
+              variation1: 0,
+              variation2: 0,
+              variation3: 0,
+              rotation: -3.14,
+            ),
+          ),
+          Center(
+            child: RotationTransition(
+                turns: new AlwaysStoppedAnimation(randomRotation / 360),
+                child: UnconstrainedBox(
+                  child: AnimatedCrossFade(
+                    alignment: Alignment.center,
+                    duration: Duration(seconds: 2),
+                    firstChild: TextWidget(
+                        text: text,
+                        scale:
+                            scaleAnimation.value + 10 * _pulseController.value),
+                    secondChild: SizedBox(
+                      width: 1000,
+                      child: TextWidget(
+                          text: 'Hold',
+                          scale: scaleAnimation.value +
+                              10 * _pulseController.value),
+                    ),
+                    crossFadeState: !hold
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                  ),
+                )),
+          ),
+        ],
       ),
     );
   }
@@ -128,19 +174,14 @@ class TextWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return UnconstrainedBox(
-      clipBehavior: Clip.none,
-      child: Center(
-        child: SizedBox(
-          height: scale,
-          child: FittedBox(
-            fit: BoxFit.fitWidth,
-            child: Text(
-              text,
-              overflow: TextOverflow.visible,
-              style: TextStyle(fontFamily: 'Alphasmoke', color: Colors.white),
-            ),
-          ),
+    return SizedBox(
+      height: max(0, scale),
+      child: FittedBox(
+        fit: BoxFit.fitHeight,
+        child: Text(
+          text,
+          overflow: TextOverflow.visible,
+          style: TextStyle(fontFamily: 'Alphasmoke', color: Colors.white),
         ),
       ),
     );
